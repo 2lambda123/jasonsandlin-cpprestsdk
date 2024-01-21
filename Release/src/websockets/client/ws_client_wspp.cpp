@@ -24,7 +24,7 @@
 #define _WEBSOCKETPP_CPP11_SYSTEM_ERROR_
 #if defined(_MSC_VER)
 #pragma warning( push )
-#pragma warning( disable : 4100 4127 4512 4996 4701 4267 )
+#pragma warning( disable : 4100 4127 4512 4996 4701 4267 4592 )
 #define _WEBSOCKETPP_CPP11_STL_
 #define _WEBSOCKETPP_CONSTEXPR_TOKEN_
 #if _MSC_VER < 1900
