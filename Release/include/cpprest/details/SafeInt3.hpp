@@ -85,10 +85,10 @@ Please read the leading comments before using the class.
 #include <cstdlib>
 
 #if SAFEINT_COMPILER == VISUAL_STUDIO_COMPILER && defined _M_AMD64
-    #include <intrin.h>
-    #define SAFEINT_USE_INTRINSICS 1
+#include <intrin.h>
+#define SAFEINT_USE_INTRINSICS 1
 #else
-    #define SAFEINT_USE_INTRINSICS 0
+#define SAFEINT_USE_INTRINSICS 0
 #endif
 
 #if SAFEINT_COMPILER == VISUAL_STUDIO_COMPILER
@@ -116,7 +116,7 @@ Please read the leading comments before using the class.
 #if SAFEINT_COMPILER == CLANG_COMPILER
 
 #if __has_feature(cxx_nullptr)
-   #define NEEDS_NULLPTR_DEFINED 0
+#define NEEDS_NULLPTR_DEFINED 0
 #endif
 
 #pragma clang diagnostic push
@@ -129,21 +129,21 @@ Please read the leading comments before using the class.
 
 // If the user made a choice, respect it #if !defined
 #if !defined NEEDS_NULLPTR_DEFINED
-    // Visual Studio 2010 and higher support this
-    #if SAFEINT_COMPILER == VISUAL_STUDIO_COMPILER
-        #if (_MSC_VER < 1600)
-        #define NEEDS_NULLPTR_DEFINED 1
-        #else
-        #define NEEDS_NULLPTR_DEFINED 0
-        #endif
-    #else
-    // Let everything else trigger based on whether we use c++11 or above
-    #if __cplusplus >= 201103L
-        #define NEEDS_NULLPTR_DEFINED 0
-        #else
-        #define NEEDS_NULLPTR_DEFINED 1
-        #endif
-    #endif
+// Visual Studio 2010 and higher support this
+#if SAFEINT_COMPILER == VISUAL_STUDIO_COMPILER
+#if (_MSC_VER < 1600)
+#define NEEDS_NULLPTR_DEFINED 1
+#else
+#define NEEDS_NULLPTR_DEFINED 0
+#endif
+#else
+// Let everything else trigger based on whether we use c++11 or above
+#if __cplusplus >= 201103L
+#define NEEDS_NULLPTR_DEFINED 0
+#else
+#define NEEDS_NULLPTR_DEFINED 1
+#endif
+#endif
 #endif
 
 #if NEEDS_NULLPTR_DEFINED
@@ -647,21 +647,21 @@ namespace safeint3
 #endif
 
 #if defined SAFEINT_ASSERT_ON_EXCEPTION
-	inline void SafeIntExceptionAssert() SAFEINT_NOTHROW { SAFEINT_ASSERT(false); }
+inline void SafeIntExceptionAssert() SAFEINT_NOTHROW { SAFEINT_ASSERT(false); }
 #else
-	inline void SafeIntExceptionAssert() SAFEINT_NOTHROW {}
+inline void SafeIntExceptionAssert() SAFEINT_NOTHROW {}
 #endif
 
 #if SAFEINT_COMPILER == GCC_COMPILER || SAFEINT_COMPILER == CLANG_COMPILER
-    #define SAFEINT_NORETURN __attribute__((noreturn))
-    #define SAFEINT_STDCALL
-    #define SAFEINT_VISIBLE __attribute__ ((__visibility__("default")))
-    #define SAFEINT_WEAK __attribute__ ((weak))
+#define SAFEINT_NORETURN __attribute__((noreturn))
+#define SAFEINT_STDCALL
+#define SAFEINT_VISIBLE __attribute__ ((__visibility__("default")))
+#define SAFEINT_WEAK __attribute__ ((weak))
 #else
-    #define SAFEINT_NORETURN __declspec(noreturn)
-    #define SAFEINT_STDCALL __stdcall
-    #define SAFEINT_VISIBLE
-    #define SAFEINT_WEAK
+#define SAFEINT_NORETURN __declspec(noreturn)
+#define SAFEINT_STDCALL __stdcall
+#define SAFEINT_VISIBLE
+#define SAFEINT_WEAK
 #endif
 
 class SAFEINT_VISIBLE SafeIntException : public std::exception
@@ -685,71 +685,71 @@ public:
 
 namespace SafeIntInternal
 {
-    // Visual Studio version of SafeInt provides for two possible error
-    // handlers:
-    // SafeIntErrorPolicy_SafeIntException - C++ exception, default if not otherwise defined
-    // SafeIntErrorPolicy_InvalidParameter - Calls fail fast (Windows-specific), bypasses any exception handlers, 
-    //                                       exits the app with a crash
-    template < typename E > class SafeIntExceptionHandler;
+// Visual Studio version of SafeInt provides for two possible error
+// handlers:
+// SafeIntErrorPolicy_SafeIntException - C++ exception, default if not otherwise defined
+// SafeIntErrorPolicy_InvalidParameter - Calls fail fast (Windows-specific), bypasses any exception handlers,
+//                                       exits the app with a crash
+template < typename E > class SafeIntExceptionHandler;
 
-    template <> class SafeIntExceptionHandler < SafeIntException >
+template <> class SafeIntExceptionHandler < SafeIntException >
+{
+public:
+
+    static SAFEINT_NORETURN void SAFEINT_STDCALL SafeIntOnOverflow()
     {
-    public:
+        SafeIntExceptionAssert();
+        throw SafeIntException( SafeIntArithmeticOverflow );
+    }
 
-        static SAFEINT_NORETURN void SAFEINT_STDCALL SafeIntOnOverflow()
-        {
-            SafeIntExceptionAssert();
-            throw SafeIntException( SafeIntArithmeticOverflow );
-        }
-
-        static SAFEINT_NORETURN void SAFEINT_STDCALL SafeIntOnDivZero()
-        {
-            SafeIntExceptionAssert();
-            throw SafeIntException( SafeIntDivideByZero );
-        }
-    };
+    static SAFEINT_NORETURN void SAFEINT_STDCALL SafeIntOnDivZero()
+    {
+        SafeIntExceptionAssert();
+        throw SafeIntException( SafeIntDivideByZero );
+    }
+};
 
 #if !defined _CRT_SECURE_INVALID_PARAMETER
-	// Calling fail fast is somewhat more robust than calling abort, 
-	// but abort is the closest we can manage without Visual Studio support
-	// Need the header for abort()
-	#include <stdlib.h>
-	#define _CRT_SECURE_INVALID_PARAMETER(msg) abort()
+// Calling fail fast is somewhat more robust than calling abort,
+// but abort is the closest we can manage without Visual Studio support
+// Need the header for abort()
+#include <stdlib.h>
+#define _CRT_SECURE_INVALID_PARAMETER(msg) abort()
 #endif
 
-   class SafeInt_InvalidParameter
-   {
-   public:
-       static SAFEINT_NORETURN void SafeIntOnOverflow() SAFEINT_NOTHROW
-       {
-           SafeIntExceptionAssert();
-           _CRT_SECURE_INVALID_PARAMETER("SafeInt Arithmetic Overflow");
-       }
-
-       static SAFEINT_NORETURN void SafeIntOnDivZero() SAFEINT_NOTHROW
-       {
-           SafeIntExceptionAssert();
-           _CRT_SECURE_INVALID_PARAMETER("SafeInt Divide By Zero");
-       }
-   };
-
-#if defined _WINDOWS_ 
-
-    class SafeIntWin32ExceptionHandler 
+class SafeInt_InvalidParameter
+{
+public:
+    static SAFEINT_NORETURN void SafeIntOnOverflow() SAFEINT_NOTHROW
     {
-    public:
-        static SAFEINT_NORETURN void SAFEINT_STDCALL SafeIntOnOverflow() SAFEINT_NOTHROW
-        {
-            SafeIntExceptionAssert();
-			RaiseException( static_cast<DWORD>(EXCEPTION_INT_OVERFLOW), EXCEPTION_NONCONTINUABLE, 0, 0);
-        }
+        SafeIntExceptionAssert();
+        _CRT_SECURE_INVALID_PARAMETER("SafeInt Arithmetic Overflow");
+    }
 
-        static SAFEINT_NORETURN void SAFEINT_STDCALL SafeIntOnDivZero() SAFEINT_NOTHROW
-        {
-            SafeIntExceptionAssert();
-			RaiseException( static_cast<DWORD>(EXCEPTION_INT_DIVIDE_BY_ZERO), EXCEPTION_NONCONTINUABLE, 0, 0);
-        }
-    };
+    static SAFEINT_NORETURN void SafeIntOnDivZero() SAFEINT_NOTHROW
+    {
+        SafeIntExceptionAssert();
+        _CRT_SECURE_INVALID_PARAMETER("SafeInt Divide By Zero");
+    }
+};
+
+#if defined _WINDOWS_
+
+class SafeIntWin32ExceptionHandler
+{
+public:
+    static SAFEINT_NORETURN void SAFEINT_STDCALL SafeIntOnOverflow() SAFEINT_NOTHROW
+    {
+        SafeIntExceptionAssert();
+        RaiseException( static_cast<DWORD>(EXCEPTION_INT_OVERFLOW), EXCEPTION_NONCONTINUABLE, 0, 0);
+    }
+
+    static SAFEINT_NORETURN void SAFEINT_STDCALL SafeIntOnDivZero() SAFEINT_NOTHROW
+    {
+        SafeIntExceptionAssert();
+        RaiseException( static_cast<DWORD>(EXCEPTION_INT_DIVIDE_BY_ZERO), EXCEPTION_NONCONTINUABLE, 0, 0);
+    }
+};
 
 #endif
 
@@ -760,14 +760,14 @@ typedef SafeIntInternal::SafeIntExceptionHandler < SafeIntException > CPlusPlusE
 typedef SafeIntInternal::SafeInt_InvalidParameter InvalidParameterExceptionHandler;
 
 // This exception handler is no longer recommended, but is left here in order not to break existing users
-#if defined _WINDOWS_ 
+#if defined _WINDOWS_
 typedef SafeIntInternal::SafeIntWin32ExceptionHandler Win32ExceptionHandler;
 #endif
 
 // For Visual Studio compatibility
-#if defined VISUAL_STUDIO_SAFEINT_COMPAT 
-    typedef CPlusPlusExceptionHandler  SafeIntErrorPolicy_SafeIntException;
-    typedef InvalidParameterExceptionHandler SafeIntErrorPolicy_InvalidParameter;
+#if defined VISUAL_STUDIO_SAFEINT_COMPAT
+typedef CPlusPlusExceptionHandler  SafeIntErrorPolicy_SafeIntException;
+typedef InvalidParameterExceptionHandler SafeIntErrorPolicy_InvalidParameter;
 #endif
 
 // If the user hasn't defined a default exception handler,
@@ -776,27 +776,27 @@ typedef SafeIntInternal::SafeIntWin32ExceptionHandler Win32ExceptionHandler;
 // This library will use conditional noexcept soon, but not in this release
 // Some users might mix exception handlers, which is not advised, but is supported
 #if !defined SafeIntDefaultExceptionHandler
-    #if defined SAFEINT_RAISE_EXCEPTION
-        #if !defined _WINDOWS_
-        #error Include windows.h in order to use Win32 exceptions
-        #endif
+#if defined SAFEINT_RAISE_EXCEPTION
+#if !defined _WINDOWS_
+#error Include windows.h in order to use Win32 exceptions
+#endif
 
-        #define SafeIntDefaultExceptionHandler Win32ExceptionHandler
-    #elif defined SAFEINT_FAILFAST
-        #define SafeIntDefaultExceptionHandler InvalidParameterExceptionHandler
-    #else
-        #define SafeIntDefaultExceptionHandler CPlusPlusExceptionHandler
-		#if !defined SAFEINT_EXCEPTION_HANDLER_CPP
-		#define SAFEINT_EXCEPTION_HANDLER_CPP 1
-		#endif
-    #endif
+#define SafeIntDefaultExceptionHandler Win32ExceptionHandler
+#elif defined SAFEINT_FAILFAST
+#define SafeIntDefaultExceptionHandler InvalidParameterExceptionHandler
+#else
+#define SafeIntDefaultExceptionHandler CPlusPlusExceptionHandler
+#if !defined SAFEINT_EXCEPTION_HANDLER_CPP
+#define SAFEINT_EXCEPTION_HANDLER_CPP 1
+#endif
+#endif
 #endif
 
 #if !defined SAFEINT_EXCEPTION_HANDLER_CPP
 #define SAFEINT_EXCEPTION_HANDLER_CPP 0
 #endif
 
-// If an error handler is chosen other than C++ exceptions, such as Win32 exceptions, fail fast, 
+// If an error handler is chosen other than C++ exceptions, such as Win32 exceptions, fail fast,
 // or abort, then all methods become no throw. Some teams track throw() annotations closely,
 // and the following option provides for this.
 #if SAFEINT_EXCEPTION_HANDLER_CPP
@@ -808,8 +808,14 @@ typedef SafeIntInternal::SafeIntWin32ExceptionHandler Win32ExceptionHandler;
 // Turns out we can fool the compiler into not seeing compile-time constants with
 // a simple template specialization
 template < int method > class CompileConst;
-template <> class CompileConst<true> { public: static bool Value() SAFEINT_NOTHROW { return true; } };
-template <> class CompileConst<false> { public: static bool Value() SAFEINT_NOTHROW { return false; } };
+template <> class CompileConst<true> {
+public:
+    static bool Value() SAFEINT_NOTHROW { return true; }
+};
+template <> class CompileConst<false> {
+public:
+    static bool Value() SAFEINT_NOTHROW { return false; }
+};
 
 // The following template magic is because we're now not allowed
 // to cast a float to an enum. This means that if we happen to assign
@@ -823,45 +829,96 @@ template < typename T > class NumericType;
 
 #if defined _LIBCPP_TYPE_TRAITS || defined _TYPE_TRAITS_
 // Continue to special case bool
-template <> class NumericType<bool>             { public: enum{ isBool = true,  isFloat = false, isInt = false }; };
+template <> class NumericType<bool>             {
+public:
+    enum { isBool = true,  isFloat = false, isInt = false };
+};
 template < typename T > class NumericType
 {
-    public: 
-        enum
-        { 
-            isBool = false, // We specialized out a bool  
-            isFloat = std::is_floating_point<T>::value,
-            // If it is an enum, then consider it an int type
-            // This does allow someone to make a SafeInt from an enum type, which is not recommended,
-            // but it also allows someone to add an enum value to a SafeInt, which is handy.
-            isInt = std::is_integral<T>::value || std::is_enum<T>::value
-        };
+public:
+    enum
+    {
+        isBool = false, // We specialized out a bool
+        isFloat = std::is_floating_point<T>::value,
+        // If it is an enum, then consider it an int type
+        // This does allow someone to make a SafeInt from an enum type, which is not recommended,
+        // but it also allows someone to add an enum value to a SafeInt, which is handy.
+        isInt = std::is_integral<T>::value || std::is_enum<T>::value
+    };
 };
 
 #else
 
-template <> class NumericType<bool>             { public: enum{ isBool = true,  isFloat = false, isInt = false }; };
-template <> class NumericType<char>             { public: enum{ isBool = false, isFloat = false, isInt = true }; };
-template <> class NumericType<unsigned char>    { public: enum{ isBool = false, isFloat = false, isInt = true }; };
-template <> class NumericType<signed char>      { public: enum{ isBool = false, isFloat = false, isInt = true }; };
-template <> class NumericType<short>            { public: enum{ isBool = false, isFloat = false, isInt = true }; };
-template <> class NumericType<unsigned short>   { public: enum{ isBool = false, isFloat = false, isInt = true }; };
+template <> class NumericType<bool>             {
+public:
+    enum { isBool = true,  isFloat = false, isInt = false };
+};
+template <> class NumericType<char>             {
+public:
+    enum { isBool = false, isFloat = false, isInt = true };
+};
+template <> class NumericType<unsigned char>    {
+public:
+    enum { isBool = false, isFloat = false, isInt = true };
+};
+template <> class NumericType<signed char>      {
+public:
+    enum { isBool = false, isFloat = false, isInt = true };
+};
+template <> class NumericType<short>            {
+public:
+    enum { isBool = false, isFloat = false, isInt = true };
+};
+template <> class NumericType<unsigned short>   {
+public:
+    enum { isBool = false, isFloat = false, isInt = true };
+};
 #if defined SAFEINT_USE_WCHAR_T || defined _NATIVE_WCHAR_T_DEFINED
-template <> class NumericType<wchar_t>          { public: enum{ isBool = false, isFloat = false, isInt = true }; };
+template <> class NumericType<wchar_t>          {
+public:
+    enum { isBool = false, isFloat = false, isInt = true };
+};
 #endif
-template <> class NumericType<int>              { public: enum{ isBool = false, isFloat = false, isInt = true }; };
-template <> class NumericType<unsigned int>     { public: enum{ isBool = false, isFloat = false, isInt = true }; };
-template <> class NumericType<long>             { public: enum{ isBool = false, isFloat = false, isInt = true }; };
-template <> class NumericType<unsigned long>    { public: enum{ isBool = false, isFloat = false, isInt = true }; };
-template <> class NumericType<__int64>          { public: enum{ isBool = false, isFloat = false, isInt = true }; };
-template <> class NumericType<unsigned __int64> { public: enum{ isBool = false, isFloat = false, isInt = true }; };
-template <> class NumericType<float>            { public: enum{ isBool = false, isFloat = true,  isInt = false }; };
-template <> class NumericType<double>           { public: enum{ isBool = false, isFloat = true,  isInt = false }; };
-template <> class NumericType<long double>      { public: enum{ isBool = false, isFloat = true,  isInt = false }; };
+template <> class NumericType<int>              {
+public:
+    enum { isBool = false, isFloat = false, isInt = true };
+};
+template <> class NumericType<unsigned int>     {
+public:
+    enum { isBool = false, isFloat = false, isInt = true };
+};
+template <> class NumericType<long>             {
+public:
+    enum { isBool = false, isFloat = false, isInt = true };
+};
+template <> class NumericType<unsigned long>    {
+public:
+    enum { isBool = false, isFloat = false, isInt = true };
+};
+template <> class NumericType<__int64>          {
+public:
+    enum { isBool = false, isFloat = false, isInt = true };
+};
+template <> class NumericType<unsigned __int64> {
+public:
+    enum { isBool = false, isFloat = false, isInt = true };
+};
+template <> class NumericType<float>            {
+public:
+    enum { isBool = false, isFloat = true,  isInt = false };
+};
+template <> class NumericType<double>           {
+public:
+    enum { isBool = false, isFloat = true,  isInt = false };
+};
+template <> class NumericType<long double>      {
+public:
+    enum { isBool = false, isFloat = true,  isInt = false };
+};
 // Catch-all for anything not supported
-template < typename T > class NumericType       
-{ 
-public: 
+template < typename T > class NumericType
+{
+public:
     // We have some unknown type, which could be an enum. For parity with the code that uses <type_traits>,
     // We can try a static_cast<int> - it if compiles, then it might be an enum, and should work.
     // If it is something else that just happens to have a constructor that takes an int, and a casting operator,
@@ -869,34 +926,58 @@ public:
     // interact with a SafeInt
 
     enum
-    { 
-        isBool = false, 
-        isFloat = false, 
+    {
+        isBool = false,
+        isFloat = false,
         isInt = static_cast<int>( static_cast<T>(0) ) == 0
-    }; 
+    };
 };
 #endif // type traits
 
 // Use this to avoid compile-time const truncation warnings
 template < int fSigned, int bits > class SafeIntMinMax;
 
-template <> class SafeIntMinMax< true,   8 > { public: const static signed __int8  min = (-0x7f - 1);
-                                                const static signed __int8  max = 0x7f; };
-template <> class SafeIntMinMax< true,  16 > { public: const static __int16 min = ( -0x7fff - 1 );
-                                                const static __int16 max = 0x7fff; };
-template <> class SafeIntMinMax< true,  32 > { public: const static __int32 min = ( -0x7fffffff -1 );
-                                                const static __int32 max = 0x7fffffff; };
-template <> class SafeIntMinMax< true,  64 > { public: const static __int64 min = static_cast<__int64>(0x8000000000000000LL);
-                                                const static __int64 max = 0x7fffffffffffffffLL; };
+template <> class SafeIntMinMax< true,   8 > {
+public:
+    const static signed __int8  min = (-0x7f - 1);
+    const static signed __int8  max = 0x7f;
+};
+template <> class SafeIntMinMax< true,  16 > {
+public:
+    const static __int16 min = ( -0x7fff - 1 );
+    const static __int16 max = 0x7fff;
+};
+template <> class SafeIntMinMax< true,  32 > {
+public:
+    const static __int32 min = ( -0x7fffffff -1 );
+    const static __int32 max = 0x7fffffff;
+};
+template <> class SafeIntMinMax< true,  64 > {
+public:
+    const static __int64 min = static_cast<__int64>(0x8000000000000000LL);
+    const static __int64 max = 0x7fffffffffffffffLL;
+};
 
-template <> class SafeIntMinMax< false,  8 > { public: const static unsigned __int8  min = 0;
-                                                const static unsigned __int8  max = 0xff; };
-template <> class SafeIntMinMax< false, 16 > { public: const static unsigned __int16 min = 0;
-                                                const static unsigned __int16 max = 0xffff; };
-template <> class SafeIntMinMax< false, 32 > { public: const static unsigned __int32 min = 0;
-                                                const static unsigned __int32 max = 0xffffffff; };
-template <> class SafeIntMinMax< false, 64 > { public: const static unsigned __int64 min = 0;
-                                                const static unsigned __int64 max = 0xffffffffffffffffULL; };
+template <> class SafeIntMinMax< false,  8 > {
+public:
+    const static unsigned __int8  min = 0;
+    const static unsigned __int8  max = 0xff;
+};
+template <> class SafeIntMinMax< false, 16 > {
+public:
+    const static unsigned __int16 min = 0;
+    const static unsigned __int16 max = 0xffff;
+};
+template <> class SafeIntMinMax< false, 32 > {
+public:
+    const static unsigned __int32 min = 0;
+    const static unsigned __int32 max = 0xffffffff;
+};
+template <> class SafeIntMinMax< false, 64 > {
+public:
+    const static unsigned __int64 min = 0;
+    const static unsigned __int64 max = 0xffffffffffffffffULL;
+};
 
 template < typename T > class IntTraits
 {
@@ -1190,62 +1271,62 @@ public:
     enum
     {
         method =  ( IntTraits< FromType >::isBool &&
-                     !IntTraits< ToType >::isBool )                    ? CastFromBool :
+                    !IntTraits< ToType >::isBool )                    ? CastFromBool :
 
-                 ( !IntTraits< FromType >::isBool &&
-                     IntTraits< ToType >::isBool )                     ? CastToBool :
+                  ( !IntTraits< FromType >::isBool &&
+                    IntTraits< ToType >::isBool )                     ? CastToBool :
 
-                 ( SafeIntCompare< ToType, FromType >::isCastOK )      ? CastOK :
+                  ( SafeIntCompare< ToType, FromType >::isCastOK )      ? CastOK :
 
-                 ( ( IntTraits< ToType >::isSigned &&
-                        !IntTraits< FromType >::isSigned &&
-                        sizeof( FromType ) >= sizeof( ToType ) ) ||
-                   ( SafeIntCompare< ToType, FromType >::isBothUnsigned &&
-                        sizeof( FromType ) > sizeof( ToType ) ) )      ? CastCheckGTMax :
+                  ( ( IntTraits< ToType >::isSigned &&
+                      !IntTraits< FromType >::isSigned &&
+                      sizeof( FromType ) >= sizeof( ToType ) ) ||
+                    ( SafeIntCompare< ToType, FromType >::isBothUnsigned &&
+                      sizeof( FromType ) > sizeof( ToType ) ) )      ? CastCheckGTMax :
 
-                 ( !IntTraits< ToType >::isSigned &&
-                     IntTraits< FromType >::isSigned &&
-                     sizeof( ToType ) >= sizeof( FromType ) )          ? CastCheckLTZero :
+                  ( !IntTraits< ToType >::isSigned &&
+                    IntTraits< FromType >::isSigned &&
+                    sizeof( ToType ) >= sizeof( FromType ) )          ? CastCheckLTZero :
 
-                 ( !IntTraits< ToType >::isSigned )                    ? CastCheckSafeIntMinMaxUnsigned
-                                                                       : CastCheckSafeIntMinMaxSigned
+                  ( !IntTraits< ToType >::isSigned )                    ? CastCheckSafeIntMinMaxUnsigned
+                  : CastCheckSafeIntMinMaxSigned
     };
 };
 
 template < typename FromType > class GetCastMethod < float, FromType >
 {
 public:
-    enum{ method = CastOK };
+    enum { method = CastOK };
 };
 
 template < typename FromType > class GetCastMethod < double, FromType >
 {
 public:
-    enum{ method = CastOK };
+    enum { method = CastOK };
 };
 
 template < typename FromType > class GetCastMethod < long double, FromType >
 {
 public:
-    enum{ method = CastOK };
+    enum { method = CastOK };
 };
 
 template < typename ToType > class GetCastMethod < ToType, float >
 {
 public:
-    enum{ method = CastFromFloat };
+    enum { method = CastFromFloat };
 };
 
 template < typename ToType > class GetCastMethod < ToType, double >
 {
 public:
-    enum{ method = CastFromFloat };
+    enum { method = CastFromFloat };
 };
 
 template < typename ToType > class GetCastMethod < ToType, long double >
 {
 public:
-    enum{ method = CastFromFloat };
+    enum { method = CastFromFloat };
 };
 
 template < typename T, typename U, int > class SafeCastHelper;
@@ -1274,7 +1355,7 @@ public:
     static bool Cast( U u, T& t ) SAFEINT_NOTHROW
     {
         if( u <= (U)IntTraits< T >::maxInt &&
-            u >= (U)IntTraits< T >::minInt )
+                u >= (U)IntTraits< T >::minInt )
         {
             t = (T)u;
             return true;
@@ -1286,7 +1367,7 @@ public:
     static void CastThrow( U u, T& t ) SAFEINT_CPP_THROW
     {
         if( u <= (U)IntTraits< T >::maxInt &&
-            u >= (U)IntTraits< T >::minInt )
+                u >= (U)IntTraits< T >::minInt )
         {
             t = (T)u;
             return;
@@ -1430,24 +1511,24 @@ enum ComparisonMethod
     ComparisonMethod_UnsignedU
 };
 
-    // Note - the standard is arguably broken in the case of some integer
-    // conversion operations
-    // For example, signed char a = -1 = 0xff
-    //              unsigned int b = 0xffffffff
-    // If you then test if a < b, a value-preserving cast
-    // is made, and you're essentially testing
-    // (unsigned int)a < b == false
-    //
-    // I do not think this makes sense - if you perform
-    // a cast to an __int64, which can clearly preserve both value and signedness
-    // then you get a different and intuitively correct answer
-    // IMHO, -1 should be less than 4 billion
-    // If you prefer to retain the ANSI standard behavior
-    // insert #define ANSI_CONVERSIONS into your source
-    // Behavior differences occur in the following cases:
-    // 8, 16, and 32-bit signed int, unsigned 32-bit int
-    // any signed int, unsigned 64-bit int
-    // Note - the signed int must be negative to show the problem
+// Note - the standard is arguably broken in the case of some integer
+// conversion operations
+// For example, signed char a = -1 = 0xff
+//              unsigned int b = 0xffffffff
+// If you then test if a < b, a value-preserving cast
+// is made, and you're essentially testing
+// (unsigned int)a < b == false
+//
+// I do not think this makes sense - if you perform
+// a cast to an __int64, which can clearly preserve both value and signedness
+// then you get a different and intuitively correct answer
+// IMHO, -1 should be less than 4 billion
+// If you prefer to retain the ANSI standard behavior
+// insert #define ANSI_CONVERSIONS into your source
+// Behavior differences occur in the following cases:
+// 8, 16, and 32-bit signed int, unsigned 32-bit int
+// any signed int, unsigned 64-bit int
+// Note - the signed int must be negative to show the problem
 
 template < typename T, typename U >
 class ValidComparison
@@ -1459,12 +1540,12 @@ public:
         method = ComparisonMethod_Ok
 #else
         method = ( ( SafeIntCompare< T, U >::isLikeSigned )                              ? ComparisonMethod_Ok :
-                 ( ( IntTraits< T >::isSigned && sizeof(T) < 8 && sizeof(U) < 4 ) ||
-                   ( IntTraits< U >::isSigned && sizeof(T) < 4 && sizeof(U) < 8 ) )  ? ComparisonMethod_CastInt :
-                 ( ( IntTraits< T >::isSigned && sizeof(U) < 8 ) ||
-                   ( IntTraits< U >::isSigned && sizeof(T) < 8 ) )                   ? ComparisonMethod_CastInt64 :
-                 ( !IntTraits< T >::isSigned )                                       ? ComparisonMethod_UnsignedT :
-                                                                                       ComparisonMethod_UnsignedU )
+                   ( ( IntTraits< T >::isSigned && sizeof(T) < 8 && sizeof(U) < 4 ) ||
+                     ( IntTraits< U >::isSigned && sizeof(T) < 4 && sizeof(U) < 8 ) )  ? ComparisonMethod_CastInt :
+                   ( ( IntTraits< T >::isSigned && sizeof(U) < 8 ) ||
+                     ( IntTraits< U >::isSigned && sizeof(T) < 8 ) )                   ? ComparisonMethod_CastInt64 :
+                   ( !IntTraits< T >::isSigned )                                       ? ComparisonMethod_UnsignedT :
+                   ComparisonMethod_UnsignedU )
 #endif
     };
 };
@@ -1789,36 +1870,36 @@ class MultiplicationMethod
 public:
     enum
     {
-                 // unsigned-unsigned
+        // unsigned-unsigned
         method = (IntRegion< T,U >::IntZone_UintLT32_UintLT32  ? MultiplicationState_CastUint :
-                 (IntRegion< T,U >::IntZone_Uint32_UintLT64 ||
-                  IntRegion< T,U >::IntZone_UintLT32_Uint32)   ? MultiplicationState_CastUint64 :
+                  (IntRegion< T,U >::IntZone_Uint32_UintLT64 ||
+                   IntRegion< T,U >::IntZone_UintLT32_Uint32)   ? MultiplicationState_CastUint64 :
                   SafeIntCompare< T,U >::isBothUnsigned &&
                   IntTraits< T >::isUint64 && IntTraits< U >::isUint64 ? MultiplicationState_Uint64Uint64 :
-                 (IntRegion< T,U >::IntZone_Uint64_Uint)       ? MultiplicationState_Uint64Uint :
-                 (IntRegion< T,U >::IntZone_UintLT64_Uint64)   ? MultiplicationState_UintUint64 :
-                 // unsigned-signed
-                 (IntRegion< T,U >::IntZone_UintLT32_IntLT32)  ? MultiplicationState_CastInt :
-                 (IntRegion< T,U >::IntZone_Uint32_IntLT64 ||
-                  IntRegion< T,U >::IntZone_UintLT32_Int32)    ? MultiplicationState_CastInt64 :
-                 (IntRegion< T,U >::IntZone_Uint64_Int)        ? MultiplicationState_Uint64Int :
-                 (IntRegion< T,U >::IntZone_UintLT64_Int64)    ? MultiplicationState_UintInt64 :
-                 (IntRegion< T,U >::IntZone_Uint64_Int64)      ? MultiplicationState_Uint64Int64 :
-                 // signed-signed
-                 (IntRegion< T,U >::IntZone_IntLT32_IntLT32)   ? MultiplicationState_CastInt :
-                 (IntRegion< T,U >::IntZone_Int32_IntLT64 ||
-                  IntRegion< T,U >::IntZone_IntLT32_Int32)     ? MultiplicationState_CastInt64 :
-                 (IntRegion< T,U >::IntZone_Int64_Int64)       ? MultiplicationState_Int64Int64 :
-                 (IntRegion< T,U >::IntZone_Int64_Int)         ? MultiplicationState_Int64Int :
-                 (IntRegion< T,U >::IntZone_IntLT64_Int64)     ? MultiplicationState_IntInt64 :
-                 // signed-unsigned
-                 (IntRegion< T,U >::IntZone_IntLT32_UintLT32)  ? MultiplicationState_CastInt :
-                 (IntRegion< T,U >::IntZone_Int32_UintLT32 ||
-                  IntRegion< T,U >::IntZone_IntLT64_Uint32)    ? MultiplicationState_CastInt64 :
-                 (IntRegion< T,U >::IntZone_Int64_UintLT64)    ? MultiplicationState_Int64Uint :
-                 (IntRegion< T,U >::IntZone_Int_Uint64)        ? MultiplicationState_IntUint64 :
-                 (IntRegion< T,U >::IntZone_Int64_Uint64       ? MultiplicationState_Int64Uint64 :
-                  MultiplicationState_Error ) )
+                  (IntRegion< T,U >::IntZone_Uint64_Uint)       ? MultiplicationState_Uint64Uint :
+                  (IntRegion< T,U >::IntZone_UintLT64_Uint64)   ? MultiplicationState_UintUint64 :
+                  // unsigned-signed
+                  (IntRegion< T,U >::IntZone_UintLT32_IntLT32)  ? MultiplicationState_CastInt :
+                  (IntRegion< T,U >::IntZone_Uint32_IntLT64 ||
+                   IntRegion< T,U >::IntZone_UintLT32_Int32)    ? MultiplicationState_CastInt64 :
+                  (IntRegion< T,U >::IntZone_Uint64_Int)        ? MultiplicationState_Uint64Int :
+                  (IntRegion< T,U >::IntZone_UintLT64_Int64)    ? MultiplicationState_UintInt64 :
+                  (IntRegion< T,U >::IntZone_Uint64_Int64)      ? MultiplicationState_Uint64Int64 :
+                  // signed-signed
+                  (IntRegion< T,U >::IntZone_IntLT32_IntLT32)   ? MultiplicationState_CastInt :
+                  (IntRegion< T,U >::IntZone_Int32_IntLT64 ||
+                   IntRegion< T,U >::IntZone_IntLT32_Int32)     ? MultiplicationState_CastInt64 :
+                  (IntRegion< T,U >::IntZone_Int64_Int64)       ? MultiplicationState_Int64Int64 :
+                  (IntRegion< T,U >::IntZone_Int64_Int)         ? MultiplicationState_Int64Int :
+                  (IntRegion< T,U >::IntZone_IntLT64_Int64)     ? MultiplicationState_IntInt64 :
+                  // signed-unsigned
+                  (IntRegion< T,U >::IntZone_IntLT32_UintLT32)  ? MultiplicationState_CastInt :
+                  (IntRegion< T,U >::IntZone_Int32_UintLT32 ||
+                   IntRegion< T,U >::IntZone_IntLT64_Uint32)    ? MultiplicationState_CastInt64 :
+                  (IntRegion< T,U >::IntZone_Int64_UintLT64)    ? MultiplicationState_Int64Uint :
+                  (IntRegion< T,U >::IntZone_Int_Uint64)        ? MultiplicationState_IntUint64 :
+                  (IntRegion< T,U >::IntZone_Int64_Uint64       ? MultiplicationState_Int64Uint64 :
+                   MultiplicationState_Error ) )
     };
 };
 
@@ -1941,7 +2022,7 @@ template < typename T, typename U > class LargeIntRegMultiply;
 inline bool IntrinsicMultiplyUint64( const unsigned __int64& a, const unsigned __int64& b, unsigned __int64* pRet ) SAFEINT_NOTHROW
 {
     unsigned __int64 ulHigh = 0;
-    *pRet = _umul128(a , b, &ulHigh);
+    *pRet = _umul128(a, b, &ulHigh);
     return ulHigh == 0;
 }
 
@@ -1949,7 +2030,7 @@ inline bool IntrinsicMultiplyUint64( const unsigned __int64& a, const unsigned _
 inline bool IntrinsicMultiplyInt64( const signed __int64& a, const signed __int64& b, signed __int64* pRet ) SAFEINT_NOTHROW
 {
     __int64 llHigh = 0;
-    *pRet = _mul128(a , b, &llHigh);
+    *pRet = _mul128(a, b, &llHigh);
 
     // Now we need to figure out what we expect
     // If llHigh is 0, then treat *pRet as unsigned
@@ -1959,7 +2040,7 @@ inline bool IntrinsicMultiplyInt64( const signed __int64& a, const signed __int6
     {
         // Negative result expected
         if( llHigh == -1 && *pRet < 0 ||
-            llHigh == 0 && *pRet == 0 )
+                llHigh == 0 && *pRet == 0 )
         {
             // Everything is within range
             return true;
@@ -2720,7 +2801,7 @@ public:
         if( IntrinsicMultiplyInt64( a, b, &tmp ) )
         {
             if( tmp > IntTraits< signed __int32 >::maxInt ||
-                tmp < IntTraits< signed __int32 >::minInt )
+                    tmp < IntTraits< signed __int32 >::minInt )
             {
                 return false;
             }
@@ -2784,7 +2865,7 @@ public:
         if( IntrinsicMultiplyInt64( a, b, &tmp ) )
         {
             if( tmp > IntTraits< signed __int32 >::maxInt ||
-                tmp < IntTraits< signed __int32 >::minInt )
+                    tmp < IntTraits< signed __int32 >::minInt )
             {
                 E::SafeIntOnOverflow();
             }
@@ -2983,7 +3064,7 @@ public:
         unsigned __int32 tmp;
 
         if( LargeIntRegMultiply< unsigned __int32, unsigned __int64 >::RegMultiply( t, u1, &tmp ) &&
-            SafeCastHelper< T, unsigned __int32, GetCastMethod< T, unsigned __int32 >::method >::Cast(tmp, ret) )
+                SafeCastHelper< T, unsigned __int32, GetCastMethod< T, unsigned __int32 >::method >::Cast(tmp, ret) )
         {
             return true;
         }
@@ -3059,7 +3140,7 @@ public:
         unsigned __int32 tmp;
 
         if( LargeIntRegMultiply< unsigned __int32, __int64 >::RegMultiply( (unsigned __int32)t, u1, &tmp ) &&
-            SafeCastHelper< T, unsigned __int32, GetCastMethod< T, unsigned __int32 >::method >::Cast(tmp, ret) )
+                SafeCastHelper< T, unsigned __int32, GetCastMethod< T, unsigned __int32 >::method >::Cast(tmp, ret) )
         {
             return true;
         }
@@ -3155,7 +3236,7 @@ public:
         __int32 tmp;
 
         if( LargeIntRegMultiply< __int32, unsigned __int64 >::RegMultiply( (__int32)t, u1, &tmp ) &&
-            SafeCastHelper< T, __int32, GetCastMethod< T, __int32 >::method >::Cast( tmp, ret ) )
+                SafeCastHelper< T, __int32, GetCastMethod< T, __int32 >::method >::Cast( tmp, ret ) )
         {
             return true;
         }
@@ -3210,7 +3291,7 @@ public:
         __int32 tmp;
 
         if( LargeIntRegMultiply< __int32, __int64 >::RegMultiply( (__int32)t, u1, &tmp ) &&
-            SafeCastHelper< T, __int32, GetCastMethod< T, __int32 >::method >::Cast( tmp, ret ) )
+                SafeCastHelper< T, __int32, GetCastMethod< T, __int32 >::method >::Cast( tmp, ret ) )
         {
             return true;
         }
@@ -3246,13 +3327,13 @@ public:
     enum
     {
         method = (SafeIntCompare< T, U >::isBothUnsigned                     ? DivisionState_OK :
-                 (!IntTraits< T >::isSigned && IntTraits< U >::isSigned) ? DivisionState_UnsignedSigned :
-                 (IntTraits< T >::isSigned &&
-                    IntTraits< U >::isUint32 &&
-                    IntTraits< T >::isLT64Bit)                           ? DivisionState_SignedUnsigned32 :
-                 (IntTraits< T >::isSigned && IntTraits< U >::isUint64)  ? DivisionState_SignedUnsigned64 :
-                 (IntTraits< T >::isSigned && !IntTraits< U >::isSigned) ? DivisionState_SignedUnsigned :
-                                                                           DivisionState_SignedSigned)
+                  (!IntTraits< T >::isSigned && IntTraits< U >::isSigned) ? DivisionState_UnsignedSigned :
+                  (IntTraits< T >::isSigned &&
+                   IntTraits< U >::isUint32 &&
+                   IntTraits< T >::isLT64Bit)                           ? DivisionState_SignedUnsigned32 :
+                  (IntTraits< T >::isSigned && IntTraits< U >::isUint64)  ? DivisionState_SignedUnsigned64 :
+                  (IntTraits< T >::isSigned && !IntTraits< U >::isSigned) ? DivisionState_SignedUnsigned :
+                  DivisionState_SignedSigned)
     };
 };
 
@@ -3433,15 +3514,15 @@ public:
                 result = (T)((__int64)t/(__int64)u);
         }
         else // Corner case
-        if( t == IntTraits< T >::minInt && u == (unsigned __int64)IntTraits< T >::minInt )
-        {
-            // Min int divided by it's own magnitude is -1
-            result = -1;
-        }
-        else
-        {
-            result = 0;
-        }
+            if( t == IntTraits< T >::minInt && u == (unsigned __int64)IntTraits< T >::minInt )
+            {
+                // Min int divided by it's own magnitude is -1
+                result = -1;
+            }
+            else
+            {
+                result = 0;
+            }
         return SafeIntNoError;
     }
 
@@ -3470,15 +3551,15 @@ public:
                 result = (T)((__int64)t/(__int64)u);
         }
         else // Corner case
-        if( t == IntTraits< T >::minInt && u == (unsigned __int64)IntTraits< T >::minInt )
-        {
-            // Min int divided by it's own magnitude is -1
-            result = -1;
-        }
-        else
-        {
-            result = 0;
-        }
+            if( t == IntTraits< T >::minInt && u == (unsigned __int64)IntTraits< T >::minInt )
+            {
+                // Min int divided by it's own magnitude is -1
+                result = -1;
+            }
+            else
+            {
+                result = 0;
+            }
     }
 };
 
@@ -3594,33 +3675,33 @@ class AdditionMethod
 public:
     enum
     {
-                 //unsigned-unsigned
+        //unsigned-unsigned
         method = (IntRegion< T,U >::IntZone_UintLT32_UintLT32  ? AdditionState_CastIntCheckMax :
-                 (IntRegion< T,U >::IntZone_Uint32_UintLT64)   ? AdditionState_CastUintCheckOverflow :
-                 (IntRegion< T,U >::IntZone_UintLT32_Uint32)   ? AdditionState_CastUintCheckOverflowMax :
-                 (IntRegion< T,U >::IntZone_Uint64_Uint)       ? AdditionState_CastUint64CheckOverflow :
-                 (IntRegion< T,U >::IntZone_UintLT64_Uint64)   ? AdditionState_CastUint64CheckOverflowMax :
-                 //unsigned-signed
-                 (IntRegion< T,U >::IntZone_UintLT32_IntLT32)  ? AdditionState_CastIntCheckSafeIntMinMax :
-                 (IntRegion< T,U >::IntZone_Uint32_IntLT64 ||
-                  IntRegion< T,U >::IntZone_UintLT32_Int32)    ? AdditionState_CastInt64CheckSafeIntMinMax :
-                 (IntRegion< T,U >::IntZone_Uint64_Int ||
-                  IntRegion< T,U >::IntZone_Uint64_Int64)      ? AdditionState_CastUint64CheckSafeIntMinMax :
-                 (IntRegion< T,U >::IntZone_UintLT64_Int64)    ? AdditionState_CastUint64CheckSafeIntMinMax2 :
-                 //signed-signed
-                 (IntRegion< T,U >::IntZone_IntLT32_IntLT32)   ? AdditionState_CastIntCheckSafeIntMinMax :
-                 (IntRegion< T,U >::IntZone_Int32_IntLT64 ||
-                  IntRegion< T,U >::IntZone_IntLT32_Int32)     ? AdditionState_CastInt64CheckSafeIntMinMax :
-                 (IntRegion< T,U >::IntZone_Int64_Int ||
-                  IntRegion< T,U >::IntZone_Int64_Int64)       ? AdditionState_CastInt64CheckOverflow :
-                 (IntRegion< T,U >::IntZone_IntLT64_Int64)     ? AdditionState_CastInt64CheckOverflowSafeIntMinMax :
-                 //signed-unsigned
-                 (IntRegion< T,U >::IntZone_IntLT32_UintLT32)  ? AdditionState_CastIntCheckMax :
-                 (IntRegion< T,U >::IntZone_Int32_UintLT32 ||
-                  IntRegion< T,U >::IntZone_IntLT64_Uint32)    ? AdditionState_CastInt64CheckMax :
-                 (IntRegion< T,U >::IntZone_Int64_UintLT64)    ? AdditionState_CastInt64CheckOverflowMax :
-                 (IntRegion< T,U >::IntZone_Int64_Uint64)      ? AdditionState_ManualCheckInt64Uint64 :
-                 (IntRegion< T,U >::IntZone_Int_Uint64)        ? AdditionState_ManualCheck :
+                  (IntRegion< T,U >::IntZone_Uint32_UintLT64)   ? AdditionState_CastUintCheckOverflow :
+                  (IntRegion< T,U >::IntZone_UintLT32_Uint32)   ? AdditionState_CastUintCheckOverflowMax :
+                  (IntRegion< T,U >::IntZone_Uint64_Uint)       ? AdditionState_CastUint64CheckOverflow :
+                  (IntRegion< T,U >::IntZone_UintLT64_Uint64)   ? AdditionState_CastUint64CheckOverflowMax :
+                  //unsigned-signed
+                  (IntRegion< T,U >::IntZone_UintLT32_IntLT32)  ? AdditionState_CastIntCheckSafeIntMinMax :
+                  (IntRegion< T,U >::IntZone_Uint32_IntLT64 ||
+                   IntRegion< T,U >::IntZone_UintLT32_Int32)    ? AdditionState_CastInt64CheckSafeIntMinMax :
+                  (IntRegion< T,U >::IntZone_Uint64_Int ||
+                   IntRegion< T,U >::IntZone_Uint64_Int64)      ? AdditionState_CastUint64CheckSafeIntMinMax :
+                  (IntRegion< T,U >::IntZone_UintLT64_Int64)    ? AdditionState_CastUint64CheckSafeIntMinMax2 :
+                  //signed-signed
+                  (IntRegion< T,U >::IntZone_IntLT32_IntLT32)   ? AdditionState_CastIntCheckSafeIntMinMax :
+                  (IntRegion< T,U >::IntZone_Int32_IntLT64 ||
+                   IntRegion< T,U >::IntZone_IntLT32_Int32)     ? AdditionState_CastInt64CheckSafeIntMinMax :
+                  (IntRegion< T,U >::IntZone_Int64_Int ||
+                   IntRegion< T,U >::IntZone_Int64_Int64)       ? AdditionState_CastInt64CheckOverflow :
+                  (IntRegion< T,U >::IntZone_IntLT64_Int64)     ? AdditionState_CastInt64CheckOverflowSafeIntMinMax :
+                  //signed-unsigned
+                  (IntRegion< T,U >::IntZone_IntLT32_UintLT32)  ? AdditionState_CastIntCheckMax :
+                  (IntRegion< T,U >::IntZone_Int32_UintLT32 ||
+                   IntRegion< T,U >::IntZone_IntLT64_Uint32)    ? AdditionState_CastInt64CheckMax :
+                  (IntRegion< T,U >::IntZone_Int64_UintLT64)    ? AdditionState_CastInt64CheckOverflowMax :
+                  (IntRegion< T,U >::IntZone_Int64_Uint64)      ? AdditionState_ManualCheckInt64Uint64 :
+                  (IntRegion< T,U >::IntZone_Int_Uint64)        ? AdditionState_ManualCheck :
                   AdditionState_Error)
     };
 };
@@ -4080,8 +4161,8 @@ public:
         __int64 tmp;
 
         if( AdditionHelper< __int64, __int64, AdditionState_CastInt64CheckOverflow >::Addition( (__int64)lhs, (__int64)rhs, tmp ) &&
-            tmp <= IntTraits< T >::maxInt &&
-            tmp >= IntTraits< T >::minInt )
+                tmp <= IntTraits< T >::maxInt &&
+                tmp >= IntTraits< T >::minInt )
         {
             result = (T)tmp;
             return true;
@@ -4099,7 +4180,7 @@ public:
         AdditionHelper< __int64, __int64, AdditionState_CastInt64CheckOverflow >::AdditionThrow< E >( (__int64)lhs, (__int64)rhs, tmp );
 
         if( tmp <= IntTraits< T >::maxInt &&
-            tmp >= IntTraits< T >::minInt )
+                tmp >= IntTraits< T >::minInt )
         {
             result = (T)tmp;
             return;
@@ -4255,33 +4336,33 @@ template < typename T, typename U > class SubtractionMethod
 public:
     enum
     {
-                 // unsigned-unsigned
+        // unsigned-unsigned
         method = ((IntRegion< T,U >::IntZone_UintLT32_UintLT32 ||
-                 (IntRegion< T,U >::IntZone_Uint32_UintLT64)   ||
-                 (IntRegion< T,U >::IntZone_UintLT32_Uint32)   ||
-                 (IntRegion< T,U >::IntZone_Uint64_Uint)       ||
-                 (IntRegion< T,U >::IntZone_UintLT64_Uint64))      ? SubtractionState_BothUnsigned :
-                 // unsigned-signed
-                 (IntRegion< T,U >::IntZone_UintLT32_IntLT32)      ? SubtractionState_CastIntCheckSafeIntMinMax :
-                 (IntRegion< T,U >::IntZone_Uint32_IntLT64 ||
-                  IntRegion< T,U >::IntZone_UintLT32_Int32)        ? SubtractionState_CastInt64CheckSafeIntMinMax :
-                 (IntRegion< T,U >::IntZone_Uint64_Int ||
-                  IntRegion< T,U >::IntZone_Uint64_Int64)          ? SubtractionState_Uint64Int :
-                 (IntRegion< T,U >::IntZone_UintLT64_Int64)        ? SubtractionState_UintInt64 :
-                 // signed-signed
-                 (IntRegion< T,U >::IntZone_IntLT32_IntLT32)       ? SubtractionState_CastIntCheckSafeIntMinMax :
-                 (IntRegion< T,U >::IntZone_Int32_IntLT64 ||
-                  IntRegion< T,U >::IntZone_IntLT32_Int32)         ? SubtractionState_CastInt64CheckSafeIntMinMax :
-                 (IntRegion< T,U >::IntZone_Int64_Int ||
-                  IntRegion< T,U >::IntZone_Int64_Int64)           ? SubtractionState_Int64Int :
-                 (IntRegion< T,U >::IntZone_IntLT64_Int64)         ? SubtractionState_IntInt64 :
-                 // signed-unsigned
-                 (IntRegion< T,U >::IntZone_IntLT32_UintLT32)      ? SubtractionState_CastIntCheckMin :
-                 (IntRegion< T,U >::IntZone_Int32_UintLT32 ||
-                  IntRegion< T,U >::IntZone_IntLT64_Uint32)        ? SubtractionState_CastInt64CheckMin :
-                 (IntRegion< T,U >::IntZone_Int64_UintLT64)        ? SubtractionState_Int64Uint :
-                 (IntRegion< T,U >::IntZone_Int_Uint64)            ? SubtractionState_IntUint64 :
-                 (IntRegion< T,U >::IntZone_Int64_Uint64)          ? SubtractionState_Int64Uint64 :
+                   (IntRegion< T,U >::IntZone_Uint32_UintLT64)   ||
+                   (IntRegion< T,U >::IntZone_UintLT32_Uint32)   ||
+                   (IntRegion< T,U >::IntZone_Uint64_Uint)       ||
+                   (IntRegion< T,U >::IntZone_UintLT64_Uint64))      ? SubtractionState_BothUnsigned :
+                  // unsigned-signed
+                  (IntRegion< T,U >::IntZone_UintLT32_IntLT32)      ? SubtractionState_CastIntCheckSafeIntMinMax :
+                  (IntRegion< T,U >::IntZone_Uint32_IntLT64 ||
+                   IntRegion< T,U >::IntZone_UintLT32_Int32)        ? SubtractionState_CastInt64CheckSafeIntMinMax :
+                  (IntRegion< T,U >::IntZone_Uint64_Int ||
+                   IntRegion< T,U >::IntZone_Uint64_Int64)          ? SubtractionState_Uint64Int :
+                  (IntRegion< T,U >::IntZone_UintLT64_Int64)        ? SubtractionState_UintInt64 :
+                  // signed-signed
+                  (IntRegion< T,U >::IntZone_IntLT32_IntLT32)       ? SubtractionState_CastIntCheckSafeIntMinMax :
+                  (IntRegion< T,U >::IntZone_Int32_IntLT64 ||
+                   IntRegion< T,U >::IntZone_IntLT32_Int32)         ? SubtractionState_CastInt64CheckSafeIntMinMax :
+                  (IntRegion< T,U >::IntZone_Int64_Int ||
+                   IntRegion< T,U >::IntZone_Int64_Int64)           ? SubtractionState_Int64Int :
+                  (IntRegion< T,U >::IntZone_IntLT64_Int64)         ? SubtractionState_IntInt64 :
+                  // signed-unsigned
+                  (IntRegion< T,U >::IntZone_IntLT32_UintLT32)      ? SubtractionState_CastIntCheckMin :
+                  (IntRegion< T,U >::IntZone_Int32_UintLT32 ||
+                   IntRegion< T,U >::IntZone_IntLT64_Uint32)        ? SubtractionState_CastInt64CheckMin :
+                  (IntRegion< T,U >::IntZone_Int64_UintLT64)        ? SubtractionState_Int64Uint :
+                  (IntRegion< T,U >::IntZone_Int_Uint64)            ? SubtractionState_IntUint64 :
+                  (IntRegion< T,U >::IntZone_Int64_Uint64)          ? SubtractionState_Int64Uint64 :
                   SubtractionState_Error)
     };
 };
@@ -4292,34 +4373,34 @@ template < typename T, typename U > class SubtractionMethod2
 public:
     enum
     {
-                 // unsigned-unsigned
+        // unsigned-unsigned
         method = ((IntRegion< T,U >::IntZone_UintLT32_UintLT32 ||
-                 (IntRegion< T,U >::IntZone_Uint32_UintLT64)   ||
-                 (IntRegion< T,U >::IntZone_UintLT32_Uint32)   ||
-                 (IntRegion< T,U >::IntZone_Uint64_Uint)       ||
-                 (IntRegion< T,U >::IntZone_UintLT64_Uint64))     ? SubtractionState_BothUnsigned2 :
-                 // unsigned-signed
-                 (IntRegion< T,U >::IntZone_UintLT32_IntLT32)     ? SubtractionState_CastIntCheckSafeIntMinMax2 :
-                 (IntRegion< T,U >::IntZone_Uint32_IntLT64 ||
-                  IntRegion< T,U >::IntZone_UintLT32_Int32)       ? SubtractionState_CastInt64CheckSafeIntMinMax2 :
-                 (IntRegion< T,U >::IntZone_Uint64_Int ||
-                  IntRegion< T,U >::IntZone_Uint64_Int64)         ? SubtractionState_Uint64Int2 :
-                 (IntRegion< T,U >::IntZone_UintLT64_Int64)       ? SubtractionState_UintInt642 :
-                 // signed-signed
-                 (IntRegion< T,U >::IntZone_IntLT32_IntLT32)      ? SubtractionState_CastIntCheckSafeIntMinMax2 :
-                 (IntRegion< T,U >::IntZone_Int32_IntLT64 ||
-                  IntRegion< T,U >::IntZone_IntLT32_Int32)        ? SubtractionState_CastInt64CheckSafeIntMinMax2 :
-                 (IntRegion< T,U >::IntZone_Int64_Int ||
-                  IntRegion< T,U >::IntZone_Int64_Int64)          ? SubtractionState_Int64Int2 :
-                 (IntRegion< T,U >::IntZone_IntLT64_Int64)        ? SubtractionState_IntInt642 :
-                 // signed-unsigned
-                 (IntRegion< T,U >::IntZone_IntLT32_UintLT32)     ? SubtractionState_CastIntCheckSafeIntMinMax2 :
-                 (IntRegion< T,U >::IntZone_Int32_UintLT32 ||
-                  IntRegion< T,U >::IntZone_IntLT64_Uint32)       ? SubtractionState_CastInt64CheckSafeIntMinMax2 :
-                 (IntRegion< T,U >::IntZone_Int64_UintLT64)       ? SubtractionState_Int64Uint2 :
-                 (IntRegion< T,U >::IntZone_Int_Uint64)           ? SubtractionState_IntUint642 :
-                 (IntRegion< T,U >::IntZone_Int64_Uint64)         ? SubtractionState_Int64Uint642 :
-                                                                    SubtractionState_Error)
+                   (IntRegion< T,U >::IntZone_Uint32_UintLT64)   ||
+                   (IntRegion< T,U >::IntZone_UintLT32_Uint32)   ||
+                   (IntRegion< T,U >::IntZone_Uint64_Uint)       ||
+                   (IntRegion< T,U >::IntZone_UintLT64_Uint64))     ? SubtractionState_BothUnsigned2 :
+                  // unsigned-signed
+                  (IntRegion< T,U >::IntZone_UintLT32_IntLT32)     ? SubtractionState_CastIntCheckSafeIntMinMax2 :
+                  (IntRegion< T,U >::IntZone_Uint32_IntLT64 ||
+                   IntRegion< T,U >::IntZone_UintLT32_Int32)       ? SubtractionState_CastInt64CheckSafeIntMinMax2 :
+                  (IntRegion< T,U >::IntZone_Uint64_Int ||
+                   IntRegion< T,U >::IntZone_Uint64_Int64)         ? SubtractionState_Uint64Int2 :
+                  (IntRegion< T,U >::IntZone_UintLT64_Int64)       ? SubtractionState_UintInt642 :
+                  // signed-signed
+                  (IntRegion< T,U >::IntZone_IntLT32_IntLT32)      ? SubtractionState_CastIntCheckSafeIntMinMax2 :
+                  (IntRegion< T,U >::IntZone_Int32_IntLT64 ||
+                   IntRegion< T,U >::IntZone_IntLT32_Int32)        ? SubtractionState_CastInt64CheckSafeIntMinMax2 :
+                  (IntRegion< T,U >::IntZone_Int64_Int ||
+                   IntRegion< T,U >::IntZone_Int64_Int64)          ? SubtractionState_Int64Int2 :
+                  (IntRegion< T,U >::IntZone_IntLT64_Int64)        ? SubtractionState_IntInt642 :
+                  // signed-unsigned
+                  (IntRegion< T,U >::IntZone_IntLT32_UintLT32)     ? SubtractionState_CastIntCheckSafeIntMinMax2 :
+                  (IntRegion< T,U >::IntZone_Int32_UintLT32 ||
+                   IntRegion< T,U >::IntZone_IntLT64_Uint32)       ? SubtractionState_CastInt64CheckSafeIntMinMax2 :
+                  (IntRegion< T,U >::IntZone_Int64_UintLT64)       ? SubtractionState_Int64Uint2 :
+                  (IntRegion< T,U >::IntZone_Int_Uint64)           ? SubtractionState_IntUint642 :
+                  (IntRegion< T,U >::IntZone_Int64_Uint64)         ? SubtractionState_Int64Uint642 :
+                  SubtractionState_Error)
     };
 };
 
@@ -4832,7 +4913,7 @@ public:
         // lead to success, which enables better pipelining
         // It isn't practical here
         if( ( lhs >= 0 && rhs < 0 && tmp < lhs ) || // condition 2
-            ( rhs >= 0 && tmp > lhs ) )             // condition 3
+                ( rhs >= 0 && tmp > lhs ) )             // condition 3
         {
             return false;
         }
@@ -4858,7 +4939,7 @@ public:
         // lead to success, which enables better pipelining
         // It isn't practical here
         if( ( lhs >= 0 && rhs < 0 && tmp < lhs ) || // condition 2
-            ( rhs >= 0 && tmp > lhs ) )             // condition 3
+                ( rhs >= 0 && tmp > lhs ) )             // condition 3
         {
             E::SafeIntOnOverflow();
         }
@@ -4887,7 +4968,7 @@ public:
             // if both positive, overflow to negative not possible
             // which is why we'll explicitly check maxInt, and not call SafeCast
             if( ( IntTraits< T >::isLT64Bit && tmp > IntTraits< T >::maxInt ) ||
-                ( rhs < 0 && tmp < lhs ) )
+                    ( rhs < 0 && tmp < lhs ) )
             {
                 return false;
             }
@@ -4896,7 +4977,7 @@ public:
         {
             // lhs negative
             if( ( IntTraits< T >::isLT64Bit && tmp < IntTraits< T >::minInt) ||
-                ( rhs >=0 && tmp > lhs ) )
+                    ( rhs >=0 && tmp > lhs ) )
             {
                 return false;
             }
@@ -4924,7 +5005,7 @@ public:
             // if both positive, overflow to negative not possible
             // which is why we'll explicitly check maxInt, and not call SafeCast
             if( ( CompileConst< IntTraits< T >::isLT64Bit >::Value() && tmp > IntTraits< T >::maxInt ) ||
-                ( rhs < 0 && tmp < lhs ) )
+                    ( rhs < 0 && tmp < lhs ) )
             {
                 E::SafeIntOnOverflow();
             }
@@ -4933,7 +5014,7 @@ public:
         {
             // lhs negative
             if( ( CompileConst< IntTraits< T >::isLT64Bit >::Value() && tmp < IntTraits< T >::minInt) ||
-                ( rhs >=0 && tmp > lhs ) )
+                    ( rhs >=0 && tmp > lhs ) )
             {
                 E::SafeIntOnOverflow();
             }
@@ -5075,7 +5156,7 @@ public:
         __int64 tmp = (__int64)lhs - rhs;
 
         if( ( lhs >= 0 && rhs < 0 && tmp < lhs ) ||
-            ( rhs > 0 && tmp > lhs ) )
+                ( rhs > 0 && tmp > lhs ) )
         {
             return false;
             //else OK
@@ -5092,7 +5173,7 @@ public:
         __int64 tmp = (__int64)lhs - rhs;
 
         if( ( lhs >= 0 && rhs < 0 && tmp < lhs ) ||
-            ( rhs > 0 && tmp > lhs ) )
+                ( rhs > 0 && tmp > lhs ) )
         {
             E::SafeIntOnOverflow();
             //else OK
@@ -5351,11 +5432,11 @@ public:
         //    return type is larger and rhs is unsigned
         // Then binary operations won't produce unexpected results
         method = ( sizeof( T ) <= sizeof( U ) ||
-                 SafeIntCompare< T, U >::isBothUnsigned ||
-                 !IntTraits< U >::isSigned )          ? BinaryState_OK :
+                   SafeIntCompare< T, U >::isBothUnsigned ||
+                   !IntTraits< U >::isSigned )          ? BinaryState_OK :
                  IntTraits< U >::isInt8               ? BinaryState_Int8 :
                  IntTraits< U >::isInt16              ? BinaryState_Int16
-                                                      : BinaryState_Int32
+                 : BinaryState_Int32
     };
 };
 
@@ -5783,8 +5864,12 @@ public:
     // instances of this class to APIs that take a pointer to an integer
     // also see overloaded address-of operator below
     T* Ptr() SAFEINT_NOTHROW { return &m_int; }
-    const T* Ptr() const SAFEINT_NOTHROW { return &m_int; }
-    const T& Ref() const SAFEINT_NOTHROW { return m_int; }
+    const T* Ptr() const SAFEINT_NOTHROW {
+        return &m_int;
+    }
+    const T& Ref() const SAFEINT_NOTHROW {
+        return m_int;
+    }
 
     // Or if SafeInt< T, E >::Ptr() is inconvenient, use the overload
     // operator &
@@ -5792,15 +5877,21 @@ public:
     // It is meant to allow you to more easily
     // pass a SafeInt into things like ReadFile
     T* operator &() SAFEINT_NOTHROW { return &m_int; }
-    const T* operator &() const SAFEINT_NOTHROW { return &m_int; }
+    const T* operator &() const SAFEINT_NOTHROW {
+        return &m_int;
+    }
 
     // Unary operators
-    bool operator !() const SAFEINT_NOTHROW { return (!m_int) ? true : false; }
+    bool operator !() const SAFEINT_NOTHROW {
+        return (!m_int) ? true : false;
+    }
 
     // operator + (unary)
     // note - normally, the '+' and '-' operators will upcast to a signed int
     // for T < 32 bits. This class changes behavior to preserve type
-    const SafeInt< T, E >& operator +() const SAFEINT_NOTHROW { return *this; }
+    const SafeInt< T, E >& operator +() const SAFEINT_NOTHROW {
+        return *this;
+    }
 
     //unary  -
 
@@ -5864,7 +5955,9 @@ public:
     // One's complement
     // Note - this operator will normally change size to an int
     // cast in return improves perf and maintains type
-    SafeInt< T, E > operator ~() const SAFEINT_NOTHROW { return SafeInt< T, E >( (T)~m_int ); }
+    SafeInt< T, E > operator ~() const SAFEINT_NOTHROW {
+        return SafeInt< T, E >( (T)~m_int );
+    }
 
     // Binary operators
     //
@@ -6094,9 +6187,9 @@ public:
     // Left shift
     // Also, shifting > bitcount is undefined - trap in debug
 #ifdef SAFEINT_DISABLE_SHIFT_ASSERT
-    #define ShiftAssert(x)
+#define ShiftAssert(x)
 #else
-    #define ShiftAssert(x) SAFEINT_ASSERT(x)
+#define ShiftAssert(x) SAFEINT_ASSERT(x)
 #endif
 
     template < typename U >
@@ -6353,8 +6446,8 @@ public:
         // Also makes no sense to try to align on negative or no bits.
 
         ShiftAssert( ( ( IntTraits<T>::isSigned && bits < (int)IntTraits< T >::bitCount - 1 )
-                    || ( !IntTraits<T>::isSigned && bits < (int)IntTraits< T >::bitCount ) ) &&
-                    bits >= 0 && ( !IntTraits<T>::isSigned || m_int > 0 ) );
+                       || ( !IntTraits<T>::isSigned && bits < (int)IntTraits< T >::bitCount ) ) &&
+                     bits >= 0 && ( !IntTraits<T>::isSigned || m_int > 0 ) );
 
         const T AlignValue = ( (T)1 << bits ) - 1;
 
@@ -6367,12 +6460,24 @@ public:
     }
 
     // Commonly needed alignments:
-    const SafeInt< T, E >& Align2()  { return Align< align2 >(); }
-    const SafeInt< T, E >& Align4()  { return Align< align4 >(); }
-    const SafeInt< T, E >& Align8()  { return Align< align8 >(); }
-    const SafeInt< T, E >& Align16() { return Align< align16 >(); }
-    const SafeInt< T, E >& Align32() { return Align< align32 >(); }
-    const SafeInt< T, E >& Align64() { return Align< align64 >(); }
+    const SafeInt< T, E >& Align2()  {
+        return Align< align2 >();
+    }
+    const SafeInt< T, E >& Align4()  {
+        return Align< align4 >();
+    }
+    const SafeInt< T, E >& Align8()  {
+        return Align< align8 >();
+    }
+    const SafeInt< T, E >& Align16() {
+        return Align< align16 >();
+    }
+    const SafeInt< T, E >& Align32() {
+        return Align< align32 >();
+    }
+    const SafeInt< T, E >& Align64() {
+        return Align< align64 >();
+    }
 private:
 
     // This is almost certainly not the best optimized version of atoi,
@@ -6444,7 +6549,7 @@ bool operator <( U lhs, SafeInt< T, E > rhs ) SAFEINT_NOTHROW
 template < typename T, typename U, typename E >
 bool operator <( SafeInt<T, E> lhs, U rhs ) SAFEINT_NOTHROW
 {
-	return GreaterThanTest< U, T, ValidComparison< U, T >::method >::GreaterThan( rhs, (T)lhs );
+    return GreaterThanTest< U, T, ValidComparison< U, T >::method >::GreaterThan( rhs, (T)lhs );
 }
 
 template < typename T, typename U, typename E >
@@ -6463,7 +6568,7 @@ bool operator >( U lhs, SafeInt< T, E > rhs ) SAFEINT_NOTHROW
 template < typename T, typename U, typename E >
 bool operator >( SafeInt<T, E> lhs, U rhs ) SAFEINT_NOTHROW
 {
-	return GreaterThanTest< T, U, ValidComparison< T, U >::method >::GreaterThan( (T)lhs, rhs );
+    return GreaterThanTest< T, U, ValidComparison< T, U >::method >::GreaterThan( (T)lhs, rhs );
 }
 
 template < typename T, typename U, typename E >
@@ -6482,7 +6587,7 @@ bool operator >=( U lhs, SafeInt< T, E > rhs ) SAFEINT_NOTHROW
 template < typename T, typename U, typename E >
 bool operator >=( SafeInt<T, E> lhs, U rhs ) SAFEINT_NOTHROW
 {
-	return !GreaterThanTest< U, T, ValidComparison< U, T >::method >::GreaterThan( rhs, (T)lhs );
+    return !GreaterThanTest< U, T, ValidComparison< U, T >::method >::GreaterThan( rhs, (T)lhs );
 }
 
 template < typename T, typename U, typename E >
@@ -6611,7 +6716,7 @@ public:
         if( rhs != 0 )
         {
             if( ModulusSignedCaseHelper< T, E, IntTraits< T >::isSigned >::SignedCase( rhs, result ) )
-            return true;
+                return true;
 
             result = SafeInt< T, E >( (T)( lhs % (T)rhs ) );
             return true;
@@ -6644,7 +6749,7 @@ SafeInt< T, E > operator %( U lhs, SafeInt< T, E > rhs ) SAFEINT_CPP_THROW
     SafeInt< T, E > result;
 
     if( ModulusSimpleCaseHelper< T, U, E,
-        sizeof(T) == sizeof(U) && (bool)IntTraits< T >::isSigned == (bool)IntTraits< U >::isSigned >::ModulusSimpleCase( lhs, rhs, result ) )
+            sizeof(T) == sizeof(U) && (bool)IntTraits< T >::isSigned == (bool)IntTraits< U >::isSigned >::ModulusSimpleCase( lhs, rhs, result ) )
         return result;
 
     return SafeInt< T, E >( ( SafeInt< U, E >( lhs ) % (T)rhs ) );

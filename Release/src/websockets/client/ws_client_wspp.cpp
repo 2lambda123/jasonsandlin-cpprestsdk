@@ -373,7 +373,7 @@ public:
         {
         case websocket_message_type::text_message:
         case websocket_message_type::binary_message:
-		case websocket_message_type::pong:
+        case websocket_message_type::pong:
             break;
         default:
             return pplx::task_from_exception<void>(websocket_exception("Invalid message type"));
@@ -468,7 +468,9 @@ public:
             }
 
             // Allocate buffer to hold the data to be read from the stream.
-            sp_allocated.reset(new uint8_t[length], [=](uint8_t *p) { delete [] p; });
+            sp_allocated.reset(new uint8_t[length], [=](uint8_t *p) {
+                delete [] p;
+            });
 
             read_task = is_buf.getn(sp_allocated.get(), length).then([length](size_t bytes_read)
             {
@@ -640,19 +642,19 @@ private:
                 ec);
             break;
         case websocket_message_type::binary_message:
-			client.send(
+            client.send(
                 this_client->m_con,
                 sp_allocated.get(),
                 length,
                 websocketpp::frame::opcode::binary,
                 ec);
             break;
-		case websocket_message_type::pong:
-			client.pong(
-				this_client->m_con,
-				"",
-				ec);
-			break;
+        case websocket_message_type::pong:
+            client.pong(
+                this_client->m_con,
+                "",
+                ec);
+            break;
         default:
             // This case should have already been filtered above.
             std::abort();
@@ -711,7 +713,9 @@ private:
         {
             return m_client;
         }
-        bool is_tls_client() const override { return false; }
+        bool is_tls_client() const override {
+            return false;
+        }
         websocketpp::client<websocketpp::config::asio_client> m_client;
     };
     struct websocketpp_tls_client : websocketpp_client_base
@@ -720,7 +724,9 @@ private:
         {
             return m_client;
         }
-        bool is_tls_client() const override { return true; }
+        bool is_tls_client() const override {
+            return true;
+        }
         websocketpp::client<websocketpp::config::asio_tls_client> m_client;
     };
 
@@ -772,6 +778,8 @@ websocket_callback_client::websocket_callback_client(websocket_client_config con
     m_client(std::make_shared<details::wspp_callback_client>(std::move(config)))
 {}
 
-}}}
+}
+}
+}
 
 #endif
